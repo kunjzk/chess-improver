@@ -1,5 +1,5 @@
 {
-  "name": "chess-improver-scaffold",
+  "name": "chess-improver",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,8 +9,11 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@vercel/blob": "^2.8.0",
+    "chess.js": "^1.4.0",
     "next": "16.3.5",
     "react": "19.2.8",
+    "react-chessboard": "^5.12.1",
     "react-dom": "19.2.8"
   },
   "devDependencies": {
