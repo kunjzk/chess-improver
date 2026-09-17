@@ -1,6 +1,6 @@
 # Chess Improver
 
-Revisit positions from your games and quiz yourself on the next move.
+Training against positions I've encountered. Revisit games and quiz yourself on the next move.
 
 ## Local development
 
