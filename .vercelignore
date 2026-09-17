@@ -1,0 +1,7 @@
+.env
+.env.*
+!.env.example
+.vercel
+data/positions.json
+node_modules
+.next

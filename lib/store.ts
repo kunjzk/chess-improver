@@ -7,7 +7,9 @@ const BLOB_PATH = "positions.json";
 const LOCAL_PATH = path.join(process.cwd(), "data", "positions.json");
 
 function blobEnabled() {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  return Boolean(
+    process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID,
+  );
 }
 
 async function readLocal(): Promise<Position[]> {
