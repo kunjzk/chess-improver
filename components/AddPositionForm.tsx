@@ -36,6 +36,7 @@ export function AddPositionForm({
     { key: crypto.randomUUID(), prompt: DEFAULT_QUESTION, answer: "" },
   ]);
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const parsed = useMemo<{ game: ParsedGame | null; error: string | null }>(
@@ -77,11 +78,13 @@ export function AddPositionForm({
     setPly(0);
     setColorTouched(false);
     setError(null);
+    setSaved(false);
   }
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
+    setSaved(false);
     if (!parsed.game) {
       setError(parsed.error ?? "Paste a PGN first.");
       return;
@@ -106,7 +109,14 @@ export function AddPositionForm({
         setError(data.error ?? "Could not save position.");
         return;
       }
-      router.push(`/positions/${data.position?.id}`);
+      setPgn("");
+      setPly(0);
+      setMyColor("w");
+      setColorTouched(false);
+      setQuestions([
+        { key: crypto.randomUUID(), prompt: DEFAULT_QUESTION, answer: "" },
+      ]);
+      setSaved(true);
       router.refresh();
     } catch {
       setError("Could not save position.");
@@ -242,6 +252,11 @@ export function AddPositionForm({
         </button>
       </div>
 
+      {saved ? (
+        <p className="text-sm text-[#81b64c]">
+          Position saved. Add another, or go back to review.
+        </p>
+      ) : null}
       {error ? <p className="text-sm text-[#f07167]">{error}</p> : null}
 
       <button

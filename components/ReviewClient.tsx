@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { CapturedMaterial } from "@/components/CapturedMaterial";
 import { GameBoard } from "@/components/GameBoard";
 import {
   fenAtPly,
@@ -11,24 +12,30 @@ import {
   plyLabel,
   STARTING_FEN,
 } from "@/lib/chess";
+import { useReviewOrder } from "@/lib/review-order";
 import type { LastMove, Position } from "@/lib/types";
+
+const navClassName =
+  "flex h-11 w-full items-center justify-center rounded-lg bg-[#3d3a37] text-center text-sm font-semibold";
+
+type Snapshot = {
+  fen: string;
+  lastMove: LastMove | null;
+};
 
 type ReviewClientProps = {
   position: Position;
-  prevId: string | null;
-  nextId: string | null;
-  index: number;
-  total: number;
+  positionIds: string[];
 };
 
-export function ReviewClient({
-  position,
-  prevId,
-  nextId,
-  index,
-  total,
-}: ReviewClientProps) {
+export function ReviewClient({ position, positionIds }: ReviewClientProps) {
   const router = useRouter();
+  const order = useReviewOrder(positionIds);
+  const index = Math.max(0, order.indexOf(position.id));
+  const total = order.length;
+  const prevId = total > 1 ? order[(index - 1 + total) % total] : null;
+  const nextId = total > 1 ? order[(index + 1) % total] : null;
+
   const parsed = useMemo(() => {
     try {
       return { game: parsePgn(position.pgn), error: null };
@@ -58,6 +65,7 @@ export function ReviewClient({
   const [fen, setFen] = useState(position.ply === 0 ? studyFen : preFen);
   const [lastMove, setLastMove] = useState<LastMove | null>(null);
   const [allowMoves, setAllowMoves] = useState(position.ply === 0);
+  const [history, setHistory] = useState<Snapshot[]>([]);
   const [showAnswers, setShowAnswers] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -81,6 +89,17 @@ export function ReviewClient({
     setFen(studyFen);
     setLastMove(studyLastMove);
     setAllowMoves(true);
+    setHistory([]);
+  }
+
+  function undoMove() {
+    const previous = history[history.length - 1];
+    if (!previous) {
+      return;
+    }
+    setHistory((current) => current.slice(0, -1));
+    setFen(previous.fen);
+    setLastMove(previous.lastMove);
   }
 
   async function deletePosition() {
@@ -95,7 +114,9 @@ export function ReviewClient({
       if (!response.ok) {
         return;
       }
-      router.push("/");
+      const remaining = order.filter((id) => id !== position.id);
+      const next = remaining[index] ?? remaining[index - 1];
+      router.push(next ? `/positions/${next}` : "/");
       router.refresh();
     } finally {
       setDeleting(false);
@@ -104,33 +125,23 @@ export function ReviewClient({
 
   return (
     <main className="flex flex-1 flex-col px-3 py-4 pb-8">
-      <div className="mb-3 flex items-center gap-2">
+      <div className="mb-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
         {prevId ? (
-          <Link
-            href={`/positions/${prevId}`}
-            className="flex-1 rounded-lg bg-[#3d3a37] text-center font-semibold"
-          >
+          <Link href={`/positions/${prevId}`} className={navClassName}>
             Previous
           </Link>
         ) : (
-          <span className="flex-1 rounded-lg bg-[#3d3a37] text-center font-semibold opacity-40">
-            Previous
-          </span>
+          <span className={`${navClassName} opacity-40`}>Previous</span>
         )}
         <span className="min-w-16 text-center text-sm text-[#c8c8c8]">
           {index + 1} / {total}
         </span>
         {nextId ? (
-          <Link
-            href={`/positions/${nextId}`}
-            className="flex-1 rounded-lg bg-[#3d3a37] text-center font-semibold"
-          >
+          <Link href={`/positions/${nextId}`} className={navClassName}>
             Next
           </Link>
         ) : (
-          <span className="flex-1 rounded-lg bg-[#3d3a37] text-center font-semibold opacity-40">
-            Next
-          </span>
+          <span className={`${navClassName} opacity-40`}>Next</span>
         )}
       </div>
 
@@ -140,20 +151,33 @@ export function ReviewClient({
         lastMove={lastMove}
         allowMoves={allowMoves}
         onMove={(nextFen, move) => {
+          setHistory((current) => [...current, { fen, lastMove }]);
           setFen(nextFen);
           setLastMove(move);
         }}
       />
 
+      <CapturedMaterial fen={fen} myColor={position.myColor} />
+
       <p className="mt-3 text-center text-sm text-[#d0d0d0]">{label}</p>
 
-      <button
-        type="button"
-        onClick={resetBoard}
-        className="mt-3 rounded-lg bg-[#3d3a37] font-semibold"
-      >
-        Reset
-      </button>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={resetBoard}
+          className="rounded-lg bg-[#3d3a37] font-semibold"
+        >
+          Reset
+        </button>
+        <button
+          type="button"
+          onClick={undoMove}
+          disabled={history.length === 0}
+          className="rounded-lg bg-[#3d3a37] font-semibold disabled:opacity-40"
+        >
+          Undo
+        </button>
+      </div>
 
       <ul className="mt-5 flex flex-col gap-3">
         {position.questions.map((question) => (

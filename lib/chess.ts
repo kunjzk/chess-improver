@@ -146,3 +146,75 @@ export function isLightSquare(square: string) {
   const rank = Number(square[1]);
   return (file + rank) % 2 === 0;
 }
+
+const PIECE_ORDER = ["q", "r", "b", "n", "p"] as const;
+const STARTING_COUNTS: Record<(typeof PIECE_ORDER)[number], number> = {
+  q: 1,
+  r: 2,
+  b: 2,
+  n: 2,
+  p: 8,
+};
+const PIECE_SYMBOL: Record<PlayerColor, Record<(typeof PIECE_ORDER)[number], string>> =
+  {
+    w: { q: "♕", r: "♖", b: "♗", n: "♘", p: "♙" },
+    b: { q: "♛", r: "♜", b: "♝", n: "♞", p: "♟" },
+  };
+
+export function capturedPieces(fen: string) {
+  const placement = fen.split(" ")[0] ?? "";
+  const counts: Record<PlayerColor, Record<(typeof PIECE_ORDER)[number], number>> = {
+    w: { q: 0, r: 0, b: 0, n: 0, p: 0 },
+    b: { q: 0, r: 0, b: 0, n: 0, p: 0 },
+  };
+
+  for (const char of placement) {
+    switch (char) {
+      case "Q":
+        counts.w.q += 1;
+        break;
+      case "R":
+        counts.w.r += 1;
+        break;
+      case "B":
+        counts.w.b += 1;
+        break;
+      case "N":
+        counts.w.n += 1;
+        break;
+      case "P":
+        counts.w.p += 1;
+        break;
+      case "q":
+        counts.b.q += 1;
+        break;
+      case "r":
+        counts.b.r += 1;
+        break;
+      case "b":
+        counts.b.b += 1;
+        break;
+      case "n":
+        counts.b.n += 1;
+        break;
+      case "p":
+        counts.b.p += 1;
+        break;
+      default:
+        break;
+    }
+  }
+
+  function missing(color: PlayerColor) {
+    const symbols: string[] = [];
+    for (const type of PIECE_ORDER) {
+      const taken = Math.max(0, STARTING_COUNTS[type] - counts[color][type]);
+      for (let i = 0; i < taken; i += 1) {
+        symbols.push(PIECE_SYMBOL[color][type]);
+      }
+    }
+    return symbols;
+  }
+
+  return { w: missing("w"), b: missing("b") };
+}
