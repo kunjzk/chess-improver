@@ -148,18 +148,21 @@ export function isLightSquare(square: string) {
 }
 
 const PIECE_ORDER = ["q", "r", "b", "n", "p"] as const;
-const STARTING_COUNTS: Record<(typeof PIECE_ORDER)[number], number> = {
+
+export type CapturedPieceType = (typeof PIECE_ORDER)[number];
+
+export type CapturedPiece = {
+  color: PlayerColor;
+  type: CapturedPieceType;
+};
+
+const STARTING_COUNTS: Record<CapturedPieceType, number> = {
   q: 1,
   r: 2,
   b: 2,
   n: 2,
   p: 8,
 };
-const PIECE_SYMBOL: Record<PlayerColor, Record<(typeof PIECE_ORDER)[number], string>> =
-  {
-    w: { q: "♕", r: "♖", b: "♗", n: "♘", p: "♙" },
-    b: { q: "♛", r: "♜", b: "♝", n: "♞", p: "♟" },
-  };
 
 export function capturedPieces(fen: string) {
   const placement = fen.split(" ")[0] ?? "";
@@ -206,14 +209,14 @@ export function capturedPieces(fen: string) {
   }
 
   function missing(color: PlayerColor) {
-    const symbols: string[] = [];
+    const pieces: CapturedPiece[] = [];
     for (const type of PIECE_ORDER) {
       const taken = Math.max(0, STARTING_COUNTS[type] - counts[color][type]);
       for (let i = 0; i < taken; i += 1) {
-        symbols.push(PIECE_SYMBOL[color][type]);
+        pieces.push({ color, type });
       }
     }
-    return symbols;
+    return pieces;
   }
 
   return { w: missing("w"), b: missing("b") };
