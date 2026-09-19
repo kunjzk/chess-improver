@@ -65,6 +65,7 @@ export async function POST(request: Request) {
     ply,
     myColor,
     questions,
+    starred: false,
     white: game.headers.White,
     black: game.headers.Black,
   });

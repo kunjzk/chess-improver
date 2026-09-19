@@ -56,9 +56,18 @@ async function writeBlob(positions: Position[]) {
   });
 }
 
+function normalize(positions: Position[]) {
+  return positions.map((position) => ({
+    ...position,
+    starred: Boolean(position.starred),
+  }));
+}
+
 export async function loadPositions(): Promise<Position[]> {
   const positions = blobEnabled() ? await readBlob() : await readLocal();
-  return [...positions].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return normalize(positions).sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt),
+  );
 }
 
 export async function savePositions(positions: Position[]) {
@@ -80,12 +89,24 @@ export async function createPosition(
   const positions = await loadPositions();
   const position: Position = {
     ...input,
+    starred: input.starred ?? false,
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
   };
   positions.unshift(position);
   await savePositions(positions);
   return position;
+}
+
+export async function setStarred(id: string, starred: boolean) {
+  const positions = await loadPositions();
+  const index = positions.findIndex((position) => position.id === id);
+  if (index === -1) {
+    return null;
+  }
+  positions[index] = { ...positions[index], starred };
+  await savePositions(positions);
+  return positions[index];
 }
 
 export async function deletePosition(id: string) {

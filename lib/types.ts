@@ -13,6 +13,7 @@ export type Position = {
   ply: number;
   myColor: PlayerColor;
   questions: Question[];
+  starred: boolean;
   white?: string;
   black?: string;
 };

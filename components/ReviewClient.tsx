@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CapturedMaterial } from "@/components/CapturedMaterial";
 import { GameBoard } from "@/components/GameBoard";
+import { StarButton } from "@/components/StarButton";
 import {
   fenAtPly,
   lastMoveAtPly,
@@ -26,9 +27,14 @@ type Snapshot = {
 type ReviewClientProps = {
   position: Position;
   positionIds: string[];
+  reviewQuery?: string;
 };
 
-export function ReviewClient({ position, positionIds }: ReviewClientProps) {
+export function ReviewClient({
+  position,
+  positionIds,
+  reviewQuery = "",
+}: ReviewClientProps) {
   const router = useRouter();
   const order = useReviewOrder(positionIds);
   const index = Math.max(0, order.indexOf(position.id));
@@ -67,6 +73,7 @@ export function ReviewClient({ position, positionIds }: ReviewClientProps) {
   const [allowMoves, setAllowMoves] = useState(position.ply === 0);
   const [history, setHistory] = useState<Snapshot[]>([]);
   const [showAnswers, setShowAnswers] = useState(false);
+  const [starred, setStarred] = useState(position.starred);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -116,7 +123,7 @@ export function ReviewClient({ position, positionIds }: ReviewClientProps) {
       }
       const remaining = order.filter((id) => id !== position.id);
       const next = remaining[index] ?? remaining[index - 1];
-      router.push(next ? `/positions/${next}` : "/");
+      router.push(next ? `/positions/${next}${reviewQuery}` : reviewQuery ? `/${reviewQuery}` : "/");
       router.refresh();
     } finally {
       setDeleting(false);
@@ -127,7 +134,10 @@ export function ReviewClient({ position, positionIds }: ReviewClientProps) {
     <main className="flex flex-1 flex-col px-3 py-4 pb-8">
       <div className="mb-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
         {prevId ? (
-          <Link href={`/positions/${prevId}`} className={navClassName}>
+          <Link
+            href={`/positions/${prevId}${reviewQuery}`}
+            className={navClassName}
+          >
             Previous
           </Link>
         ) : (
@@ -137,7 +147,10 @@ export function ReviewClient({ position, positionIds }: ReviewClientProps) {
           {index + 1} / {total}
         </span>
         {nextId ? (
-          <Link href={`/positions/${nextId}`} className={navClassName}>
+          <Link
+            href={`/positions/${nextId}${reviewQuery}`}
+            className={navClassName}
+          >
             Next
           </Link>
         ) : (
@@ -181,15 +194,25 @@ export function ReviewClient({ position, positionIds }: ReviewClientProps) {
 
       <ul className="mt-5 flex flex-col gap-3">
         {position.questions.map((question) => (
-          <li key={question.id} className="rounded-xl bg-[#262421] px-4 py-3">
-            <p className="text-sm font-semibold">{question.prompt}</p>
-            {showAnswers ? (
-              <p className="mt-2 whitespace-pre-wrap text-sm text-[#d8d8d8]">
-                {question.answer || "No answer saved."}
-              </p>
-            ) : (
-              <p className="mt-2 text-sm text-[#8d8d8d]">Answer hidden</p>
-            )}
+          <li
+            key={question.id}
+            className="flex items-start gap-2 rounded-xl bg-[#262421] py-3 pl-4 pr-1"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold">{question.prompt}</p>
+              {showAnswers ? (
+                <p className="mt-2 whitespace-pre-wrap text-sm text-[#d8d8d8]">
+                  {question.answer || "No answer saved."}
+                </p>
+              ) : (
+                <p className="mt-2 text-sm text-[#8d8d8d]">Answer hidden</p>
+              )}
+            </div>
+            <StarButton
+              positionId={position.id}
+              starred={starred}
+              onStarredChange={setStarred}
+            />
           </li>
         ))}
       </ul>
